@@ -1,3 +1,10 @@
+local pizzaService = {
+  name: 'pizza_service',
+  health_endpoint: '/health',
+  external_host: 'pizzas.localhost',
+  upstream_host: 'pizzas',
+};
+
 local logFormat = {
   json_format: {
     start_time: '%START_TIME%',
@@ -20,14 +27,43 @@ local logFormat = {
   },
 };
 
-local standardHealthCheck = {
+local HealthCheck(path) = {
   timeout: '3s',
   interval: '5s',
   unhealthy_threshold: 3,
   healthy_threshold: 2,
   http_health_check: {
-    path: '/health',
+    path: path,
     codec_client_type: 'HTTP1',
+  },
+};
+
+local LoadBalancer(upstream_host, service_name, health_check_path) = {
+  name: service_name,
+  connect_timeout: '0.25s',
+  type: 'STRICT_DNS',
+  lb_policy: 'ROUND_ROBIN',
+  health_checks: [
+    HealthCheck(health_check_path),
+  ],
+  load_assignment: {
+    cluster_name: service_name,
+    endpoints: [
+      {
+        lb_endpoints: [
+          {
+            endpoint: {
+              address: {
+                socket_address: {
+                  address: upstream_host,
+                  port_value: 3000,
+                },
+              },
+            },
+          },
+        ],
+      },
+    ],
   },
 };
 
@@ -38,7 +74,7 @@ local lbConfig = {
     type: 'STRICT_DNS',
     lb_policy: 'ROUND_ROBIN',
     health_checks: [
-      standardHealthCheck,
+      HealthCheck('/health'),
     ],
     load_assignment: {
       cluster_name: 'pizza_service',
@@ -63,7 +99,7 @@ local lbConfig = {
 };
 
 local pizzasVHost = {
-  name: 'backend',
+  name: lbConfig.pizza_service.name,
   domains: ['pizzas.localhost'],
   routes: [
     {
@@ -125,7 +161,7 @@ local baseConfig = {
       },
     ],
     clusters: [
-      lbConfig.pizza_service,
+      LoadBalancer(pizzaService.upstream_host, pizzaService.name, pizzaService.health_endpoint),
     ],
   },
 };
