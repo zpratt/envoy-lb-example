@@ -20,13 +20,55 @@ local logFormat = {
   },
 };
 
+local standardHealthCheck = {
+  timeout: '3s',
+  interval: '5s',
+  unhealthy_threshold: 3,
+  healthy_threshold: 2,
+  http_health_check: {
+    path: '/health',
+    codec_client_type: 'HTTP1',
+  },
+};
+
+local lbConfig = {
+  pizza_service: {
+    name: 'pizza_service',
+    connect_timeout: '0.25s',
+    type: 'STRICT_DNS',
+    lb_policy: 'ROUND_ROBIN',
+    health_checks: [
+      standardHealthCheck,
+    ],
+    load_assignment: {
+      cluster_name: 'pizza_service',
+      endpoints: [
+        {
+          lb_endpoints: [
+            {
+              endpoint: {
+                address: {
+                  socket_address: {
+                    address: 'pizzas',
+                    port_value: 3000,
+                  },
+                },
+              },
+            },
+          ],
+        },
+      ],
+    },
+  },
+};
+
 local pizzasVHost = {
   name: 'backend',
   domains: ['pizzas.localhost'],
   routes: [
     {
       match: { prefix: '/' },
-      route: { cluster: 'pizza_service' },
+      route: { cluster: lbConfig.pizza_service.name },
     },
   ],
 };
@@ -60,46 +102,6 @@ local connectionManagerFilter = {
         },
       },
     ],
-  },
-};
-
-local lbConfig = {
-  pizza_service: {
-    name: 'pizza_service',
-    connect_timeout: '0.25s',
-    type: 'STRICT_DNS',
-    lb_policy: 'ROUND_ROBIN',
-    health_checks: [
-      {
-        timeout: '3s',
-        interval: '5s',
-        unhealthy_threshold: 3,
-        healthy_threshold: 2,
-        http_health_check: {
-          path: '/health',
-          codec_client_type: 'HTTP1',
-        },
-      },
-    ],
-    load_assignment: {
-      cluster_name: 'pizza_service',
-      endpoints: [
-        {
-          lb_endpoints: [
-            {
-              endpoint: {
-                address: {
-                  socket_address: {
-                    address: 'pizzas',
-                    port_value: 3000,
-                  },
-                },
-              },
-            },
-          ],
-        },
-      ],
-    },
   },
 };
 
