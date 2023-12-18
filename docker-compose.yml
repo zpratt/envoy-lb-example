@@ -1,0 +1,15 @@
+version: "3"
+services:
+  pizzas:
+    build: pizzas
+    ports:
+      - "3000:3000"
+  gateway:
+    image: envoyproxy/envoy:distroless-v1.28.0
+    command: ["-c", "/etc/envoy/envoy.yaml", "--log-level", "error"]
+    volumes:
+      - ./envoy.yaml:/etc/envoy/envoy.yaml
+    ports:
+      - "8080:8080"
+    depends_on:
+      - pizzas

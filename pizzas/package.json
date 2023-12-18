@@ -1,0 +1,15 @@
+{
+  "author": "",
+  "dependencies": {
+    "fastify": "4.25.1"
+  },
+  "description": "",
+  "license": "MIT",
+  "main": "index.js",
+  "name": "pizzas-api",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "type": "module",
+  "version": "1.0.0"
+}
